@@ -56,7 +56,7 @@ class Stock:
         
         for val in value:
             if(len(val)==0):
-                messagebox.showerror("Error","Failed to insert")
+                messagebox.showerror("Insertion Error","Fields Empty!!!")
                 return
                 
         c=self.conn.cursor()

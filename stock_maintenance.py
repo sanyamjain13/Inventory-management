@@ -26,9 +26,6 @@ bg_label = Label(root,image=bg_Image)
 bg_label.place(x=0,y=0,relwidth=1,relheight=1)
 
 
-
-
-
 #------------------------------------------------------------------------------------
 #all functions
 
@@ -60,8 +57,10 @@ def list_items():
     #CATEGORY COMBOBOX
     cursor.execute("SELECT category from Item")
     Item_Category = cursor.fetchall()
-    Item_Category = [item[0] for item in Item_Category ]
+    Item_Category = [item[0].capitalize() for item in Item_Category ]
     Item_Category = list(set(Item_Category))
+    print(Item_Category)
+    Item_Category.insert(0,"All Items")
     
     categoryCombo = ttk.Combobox(all_Items,value=Item_Category,justify="center",state="readonly",font="helvetica 9 bold",foreground="grey")
     categoryCombo.current(0)
@@ -70,8 +69,10 @@ def list_items():
     #COMPANIES COMBOBOX
     cursor.execute("SELECT company from Item")
     companies = cursor.fetchall()
-    companies = [item[0] for item in companies ]
+    companies = [item[0].capitalize() for item in companies ]
     companies = list(set(companies))
+    print(companies)
+    companies.insert(0,"All Companies")
     
     companyCombo = ttk.Combobox(all_Items,value=companies,justify="center",state="readonly",font="helvetica 9 bold",foreground="grey")
     companyCombo.current(0)
@@ -113,10 +114,13 @@ def list_items():
     def show_all_data():
         #showing data in he treeview
         removeChild()
+        categoryCombo.current(0)
+        companyCombo.current(0)
+
         cursor.execute("SELECT * from Item")
         myresult = cursor.fetchall()
         for i in myresult:
-            stockView.insert("","end",text="",values=(i[0],i[1].upper(),i[2].upper(),i[3].upper(),i[4],i[5],float(i[4]*i[5])))
+            stockView.insert("","end",text="",values=(i[0],i[1],i[2],i[3],i[4],i[5],float(i[4]*i[5])))
     
 
     #filtering data when heading is clicked
@@ -125,35 +129,88 @@ def list_items():
         cursor.execute("SELECT * from Item ORDER BY %s"%(field))
         result = cursor.fetchall()
         for i in result:
-            stockView.insert("","end",text="",values=(i[0],i[1].upper(),i[2].upper(),i[3].upper(),i[4],i[5],float(i[4]*i[5])))
+            stockView.insert("","end",text="",values=(i[0],i[1],i[2],i[3],i[4],i[5],float(i[4]*i[5])))
 
-    def search_Db(event):
+    def search_Db(event,value):
         removeChild()
         #print(event.keysym)
-        value = search.get()
-        #print("value=",value)
-        if(value == ""):
-            show_all_data()
-        else:
-            cursor.execute("SELECT * from Item where name LIKE '%{}%' OR id LIKE '%{}%'".format(value,value))
-            result = cursor.fetchall()
-            for i in result:
-                stockView.insert("","end",text="",values=(i[0],i[1].upper(),i[2].upper(),i[3].upper(),i[4],i[5],float(i[4]*i[5])))
+        #value = search.get()
 
-    def search_category(event):
-        removeChild()
-        cursor.execute("SELECT* From Item WHERE category='%s' ORDER BY price"%(categoryCombo.get()))
+        if(not value):
+            show_all_data()
+            return
+
+        itemCat = categoryCombo.get()
+        companyCat = companyCombo.get()
+
+        if(itemCat == "All Items"):
+            itemCat=""
+        if(companyCat == "All Companies"):
+            companyCat=""
+
+        # if(len(itemCat)!=0 and len(companyCat)!=0):
+        #     cursor.execute("SELECT * from Item where name LIKE '%{}%' OR id LIKE '%{}%' AND category='{}' AND company='{}'".format(value,value,itemCat,companyCat))
+        # elif(len(itemCat)!=0 and len(companyCat)==0):
+        #     cursor.execute("SELECT * from Item where name LIKE '%{}%' OR id LIKE '%{}%' AND category='{}'".format(value,value,itemCat))
+        # elif(len(itemCat)==0 and len(companyCat)!=0):
+        #     cursor.execute("SELECT * from Item where name LIKE '%{}%' OR id LIKE '%{}%' AND company='{}'".format(value,value,companyCat))
+        # else:
+
+        cursor.execute("SELECT * from Item where name LIKE '%{}%' OR id LIKE '%{}%'".format(value,value))
         result = cursor.fetchall()
         for i in result:
-            stockView.insert("","end",text="",values=(i[0],i[1].upper(),i[2].upper(),i[3].upper(),i[4],i[5],float(i[4]*i[5])))
+            stockView.insert("","end",text="",values=(i[0],i[1],i[2],i[3],i[4],i[5],float(i[4]*i[5])))
+
+    def search_category(event):
+        
+        cat = categoryCombo.get()
+        com = companyCombo.get()
+
+        if(cat == "All Items"):
+            cat=""
+        if(com == "All Companies"):
+            com=""
+
+        removeChild()
+
+        if(not cat and not com):
+            cursor.execute("SELECT* From Item")
+        elif(not cat and com):
+            cursor.execute("SELECT* From Item WHERE company='%s' ORDER BY price"%(com))
+        elif(cat and not com):
+            cursor.execute("SELECT* From Item WHERE category='%s' ORDER BY price"%(cat))
+        else:    
+            cursor.execute("SELECT* From Item WHERE category='%s' AND company='%s' ORDER BY price"%(cat,com))
+        
+        result = cursor.fetchall()
+        for i in result:
+            stockView.insert("","end",text="",values=(i[0],i[1],i[2],i[3],i[4],i[5],float(i[4]*i[5])))
     
     def search_company(event):
 
+        cat = categoryCombo.get()
+        com = companyCombo.get()
+
+        if(cat == "All Items"):
+            cat=""
+        if(com == "All Companies"):
+            com=""
+
         removeChild()
-        cursor.execute("SELECT* From Item WHERE company='%s' ORDER BY price"%(companyCombo.get()))
+
+        if(not cat and not com):
+            cursor.execute("SELECT* From Item")
+        elif(not cat and com):
+            cursor.execute("SELECT* From Item WHERE company='%s' ORDER BY price"%(com))
+        elif(cat and not com):
+            cursor.execute("SELECT* From Item WHERE category='%s' ORDER BY price"%(cat))
+        else:    
+            cursor.execute("SELECT* From Item WHERE category='%s' AND company='%s' ORDER BY price"%(cat,com))
+        
         result = cursor.fetchall()
+        
         for i in result:
-            stockView.insert("","end",text="",values=(i[0],i[1].upper(),i[2].upper(),i[3].upper(),i[4],i[5],float(i[4]*i[5])))
+            stockView.insert("","end",text="",values=(i[0],i[1],i[2],i[3],i[4],i[5],float(i[4]*i[5])))
 
     def deleteRow(event):
         items = stockView.selection()
@@ -168,22 +225,31 @@ def list_items():
         messagebox.showinfo("Deletion Message","Successfully Deleted")
         show_all_data()
 
+
+    def resetEntry(event):
+        search.delete('0','end')
+        search.insert('0','SEARCH YOUR ITEM')
+
     view_img = PhotoImage(file=r"images/view2.png").subsample(23,23)
     all_item_btn=Button(all_Items,text="View All",image=view_img,command=show_all_data)
     all_item_btn.place(x=1020,y=7)
 
     show_all_data()
     stockView.bind("<Delete>",deleteRow)
+    #stockView.bind("<Double-Button-1>",openItem)
 
-    search.bind("<Key>",search_Db)
+    search.bind("<Key>",lambda event: search_Db(event,search.get().capitalize()))
     search.bind("<FocusIn>",lambda args: search.delete('0','end'))
-    search.bind("<FocusOut>",lambda args: search.insert('0','SEARCH YOUR ITEM'))
+    search.bind("<FocusOut>",resetEntry)
 
     categoryCombo.bind("<<ComboboxSelected>>",search_category)
     companyCombo.bind("<<ComboboxSelected>>",search_company)
     all_Items.resizable(0,0)
     all_Items.mainloop()
 
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
 
 def insert_item():
 
@@ -232,7 +298,8 @@ def insert_item():
     
     cat=StringVar()
     cat_list = [
-        "LED","Washing Machine","Mobile","Refrigerator","Laptop","AC","Cooler","Heater","Fan",
+
+        "Select Category","LED","Washing Machine","Mobile","Refrigerator","Laptop","AC","Cooler","Heater","Fan",
         "Iron","JMG","Microwave"
     ]
     category = ttk.Combobox(insert_frame,value=cat_list,textvariable=cat,justify="center",state="readonly",font="helvetica 9 bold",width=23)
@@ -241,7 +308,8 @@ def insert_item():
     
     com=StringVar()
     com_list = [
-        "LG","Apple","Samsung","Oppo","Vivo","Panasonic","videocon","Hitachi","Sony","Micromax",
+
+        "Select Company","LG","Apple","Samsung","Oppo","Vivo","Panasonic","videocon","Hitachi","Sony","Micromax",
         "Lava","Huaewi","One Plus","Onida","Godrej","Whirlpool","Dell","Hp","Lenovo","Philips",
         "Maharaja","Nokia","Havells","Bajaj","Khaitan","Coolmaster"
     ]
@@ -256,10 +324,19 @@ def insert_item():
 
     def insert_db(operation):
         # columns in table item : ['id', 'name', 'category', 'company', 'quantity', 'price']
-        id = model_E.get()
-        name= name_E.get()
+        id = model_E.get().capitalize()
+        name= name_E.get().capitalize()
         qty = re.sub("[^0-9]","",qty_E.get()) 
         price = re.sub("[^0-9]","",price_E.get()) 
+
+        # if(cat.get() == "Select Category"):
+        #     messagebox.showerror("Field Empty","Select Item category")
+        #     return
+
+        # if(com.get() == "Select Company"):
+        #     messagebox.showerror("Field Empty","Select Company")
+        #     return
+        
         #print(qty," ",price)
 
         if(operation == 1):
@@ -277,9 +354,9 @@ def insert_item():
                 submit_btn.config(bg="#f1f1f1",fg="black")
                 if response:    
                     query="UPDATE Item SET id='%s',name='%s',category='%s',company='%s',quantity='%s',price='%s' WHERE id='%s'"
-                    values = (id,name_E.get(),cat.get(),com.get(),qty,price,id)
+                    values = (id,name_E.get().capitalize(),cat.get().capitalize(),com.get().capitalize(),qty,price,id)
                     for val in values:
-                        if(len(val)==0):
+                        if(len(val)==0 or val=="Select Category" or val=="Select Company" ):
                             messagebox.showerror("Error","Fields Empty")
                             return
                     cursor.execute(query%values)
@@ -293,7 +370,13 @@ def insert_item():
                     price_E.delete(0,END)                    
             else:
                 query = "INSERT into Item values ('%s','%s','%s','%s','%s','%s')"
-                values = (model_E.get(),name_E.get(),cat.get(),com.get(),qty,price)
+                values = (model_E.get().capitalize(),name_E.get().capitalize(),cat.get().capitalize(),com.get().capitalize(),qty,price)
+                for val in values:
+                    
+                    if(len(val)==0 or val=="Select category" or val=="Select company" ):
+                        messagebox.showerror("Error","Fields Empty")
+                        return
+
                 db.insert(query,values,"Item")
                         
                 model_E.delete(0,END)
@@ -364,8 +447,10 @@ def insert_item():
         price_E.insert(0,price)
 
     Button(insert_frame,image=delete_img,bg="lightgrey",bd=6,command=clear_data).place(x=485,y=515)
+    
     submit_btn = Button(insert_frame,text="Insert Item",bg="#f1f1f1",fg="grey",width=12,font="helvetica 12 bold",activebackground="grey",bd=4,command=lambda: insert_db(1))
     submit_btn.grid(row=7,column=0,padx=15,pady=15,ipadx=10,sticky=W)
+
     update_btn = Button(insert_frame,text="Update Details",bg="#f1f1f1",fg="grey",font="helvetica 12 bold",activebackground="grey",bd=4,command= lambda: insert_db(2))
     update_btn.grid(row=7,column=1,padx=15,ipadx=15,sticky=E)
     #----------------------------------------------------------------------------------------------------------------------------------------------
